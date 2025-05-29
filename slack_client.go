@@ -66,3 +66,12 @@ func (sc *SlackClient) GetConversationReplies(ctx context.Context, channelID, ti
 
 	return sc.client.GetConversationRepliesContext(ctx, params)
 }
+
+func (sc *SlackClient) GetUserInfo(ctx context.Context, userID string) (*slack.User, error) {
+	if err := sc.waitForRateLimit(ctx); err != nil {
+		return nil, err
+	}
+
+	user, err := sc.client.GetUserInfoContext(ctx, userID)
+	return user, err
+}

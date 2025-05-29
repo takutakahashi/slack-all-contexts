@@ -42,22 +42,16 @@ func (e *Exporter) ExportToText(channelID, outputPath string) error {
 
 	for _, msg := range messages {
 		timestamp := e.formatTimestamp(msg.Timestamp)
-		userID := msg.UserID
-		if userID == "" {
-			userID = "Unknown"
-		}
+		userDisplay := e.formatUserDisplay(msg.UserID, msg.UserName, msg.UserRealName, msg.UserDisplayName)
 
-		fmt.Fprintf(file, "[%s] %s:\n%s\n", timestamp, userID, msg.Text)
+		fmt.Fprintf(file, "[%s] %s:\n%s\n", timestamp, userDisplay, msg.Text)
 
 		if len(msg.Replies) > 0 {
 			fmt.Fprintf(file, "\n  Thread Replies (%d):\n", len(msg.Replies))
 			for _, reply := range msg.Replies {
 				replyTime := e.formatTimestamp(reply.Timestamp)
-				replyUser := reply.UserID
-				if replyUser == "" {
-					replyUser = "Unknown"
-				}
-				fmt.Fprintf(file, "  [%s] %s: %s\n", replyTime, replyUser, reply.Text)
+				replyUserDisplay := e.formatUserDisplay(reply.UserID, reply.UserName, reply.UserRealName, reply.UserDisplayName)
+				fmt.Fprintf(file, "  [%s] %s: %s\n", replyTime, replyUserDisplay, reply.Text)
 			}
 		}
 
@@ -106,4 +100,28 @@ func (e *Exporter) formatTimestamp(ts string) string {
 	
 	t := time.Unix(int64(timestamp), 0)
 	return t.Format("2006-01-02 15:04:05")
+}
+
+func (e *Exporter) formatUserDisplay(userID, userName, realName, displayName string) string {
+	if userID == "" {
+		return "Unknown"
+	}
+
+	var parts []string
+	
+	if displayName != "" {
+		parts = append(parts, displayName)
+	} else if realName != "" {
+		parts = append(parts, realName)
+	}
+	
+	if userName != "" {
+		parts = append(parts, fmt.Sprintf("(@%s)", userName))
+	}
+	
+	if len(parts) == 0 {
+		return fmt.Sprintf("User<%s>", userID)
+	}
+	
+	return strings.Join(parts, " ")
 }

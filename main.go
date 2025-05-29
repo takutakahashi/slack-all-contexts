@@ -35,8 +35,12 @@ func main() {
 		if err := runExportMode(*channelID, *output, *outputDir, db); err != nil {
 			log.Fatalf("Export mode failed: %v", err)
 		}
+	case "users":
+		if err := runUsersMode(db); err != nil {
+			log.Fatalf("Users mode failed: %v", err)
+		}
 	default:
-		fmt.Fprintf(os.Stderr, "Error: Invalid mode '%s'. Use 'fetch' or 'export'\n", *mode)
+		fmt.Fprintf(os.Stderr, "Error: Invalid mode '%s'. Use 'fetch', 'export', or 'users'\n", *mode)
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -99,6 +103,40 @@ func runExportMode(channelID, output, outputDir string, db *Database) error {
 	return exporter.ExportToText(channelID, output)
 }
 
+func runUsersMode(db *Database) error {
+	users, err := db.GetUsers()
+	if err != nil {
+		return fmt.Errorf("failed to get users: %w", err)
+	}
+
+	if len(users) == 0 {
+		fmt.Println("No users found in the database.")
+		return nil
+	}
+
+	fmt.Printf("Found %d users:\n\n", len(users))
+	for _, user := range users {
+		fmt.Printf("## %s\n", user.Name)
+		if user.RealName != "" {
+			fmt.Printf("- **Real Name**: %s\n", user.RealName)
+		}
+		if user.DisplayName != "" {
+			fmt.Printf("- **Display Name**: %s\n", user.DisplayName)
+		}
+		if user.Email != "" {
+			fmt.Printf("- **Email**: %s\n", user.Email)
+		}
+		fmt.Printf("- **Mention**: @%s\n", user.Name)
+		fmt.Printf("- **User ID**: %s\n", user.ID)
+		if user.ProfileImage != "" {
+			fmt.Printf("- **Profile Image**: %s\n", user.ProfileImage)
+		}
+		fmt.Println()
+	}
+
+	return nil
+}
+
 func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n", os.Args[0])
@@ -111,5 +149,7 @@ func init() {
 		fmt.Fprintf(os.Stderr, "\n  Export to text:\n")
 		fmt.Fprintf(os.Stderr, "    %s -mode export -channel C1234567890 -output channel.txt\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "    %s -mode export -output-dir ./exports  # export all channels\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "\n  List users:\n")
+		fmt.Fprintf(os.Stderr, "    %s -mode users\n", os.Args[0])
 	}
 }

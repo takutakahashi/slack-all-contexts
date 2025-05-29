@@ -2,15 +2,33 @@
 
 Slackの指定したチャンネルのすべてのメッセージとスレッドをSQLiteデータベースに保存し、テキストファイルとして出力するGoプログラムです。
 
+## 登場人物
+
+Slackから取得したユーザー情報を表示するには以下のコマンドを使用してください：
+
+```bash
+./slack-all-contexts -mode users
+```
+
+このコマンドで、データベースに保存されている全ユーザーの以下の情報が表示されます：
+- Real Name（実名）
+- Display Name（表示名） 
+- Email（メールアドレス）
+- Mention（メンション用文字列）
+- User ID（ユーザーID）
+- Profile Image（プロフィール画像URL）
+
 ## 機能
 
 - 指定したSlackチャンネルのすべてのメッセージを取得
 - スレッドの返信も含めて関連付けで保存
+- ユーザー情報の自動取得・保存
 - SQLiteデータベースへの永続化
 - Slack APIのレート制限を考慮した処理
 - 増分更新対応（既に取得したメッセージはスキップ）
 - データベースからのテキスト形式でのエクスポート機能
 - 全チャンネル一括エクスポート機能
+- ユーザー情報一覧表示機能
 
 ## セットアップ
 
@@ -28,6 +46,7 @@ go mod tidy
    - `channels:read`
    - `groups:history`（プライベートチャンネルの場合）
    - `groups:read`（プライベートチャンネルの場合）
+   - `users:read`（ユーザー情報取得用）
 3. アプリをワークスペースにインストール
 4. Bot User OAuth Tokenを取得（`xoxb-`で始まるトークン）
 
@@ -66,6 +85,16 @@ export SLACK_BOT_TOKEN="xoxb-your-bot-token"
 ./slack-all-contexts -mode export -db my_slack_data.db -channel C1234567890 -output my_export.txt
 ```
 
+### ユーザー情報の表示（usersモード）
+
+```bash
+# データベースに保存されているユーザー情報を一覧表示
+./slack-all-contexts -mode users
+
+# 特定のデータベースファイルからユーザー情報を表示
+./slack-all-contexts -mode users -db my_slack_data.db
+```
+
 ### チャンネルIDの取得方法
 
 1. Slackでチャンネルを右クリック
@@ -77,6 +106,15 @@ export SLACK_BOT_TOKEN="xoxb-your-bot-token"
 ### channels テーブル
 - `id`: チャンネルID
 - `name`: チャンネル名
+- `created_at`: レコード作成日時
+
+### users テーブル
+- `id`: ユーザーID
+- `name`: ユーザー名
+- `real_name`: 実名
+- `display_name`: 表示名
+- `email`: メールアドレス
+- `profile_image`: プロフィール画像URL
 - `created_at`: レコード作成日時
 
 ### messages テーブル

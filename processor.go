@@ -12,12 +12,14 @@ import (
 type MessageProcessor struct {
 	slackClient *SlackClient
 	db          *Database
+	userCache   map[string]bool
 }
 
 func NewMessageProcessor(slackClient *SlackClient, db *Database) *MessageProcessor {
 	return &MessageProcessor{
 		slackClient: slackClient,
 		db:          db,
+		userCache:   make(map[string]bool),
 	}
 }
 
@@ -115,6 +117,12 @@ func (mp *MessageProcessor) fetchThreadReplies(ctx context.Context, channelID, t
 }
 
 func (mp *MessageProcessor) saveMessage(ctx context.Context, channelID string, message slack.Message) error {
+	if message.User != "" {
+		if err := mp.ensureUserInfo(ctx, message.User); err != nil {
+			log.Printf("Failed to fetch user info for %s: %v", message.User, err)
+		}
+	}
+
 	text := message.Text
 	if message.SubType == "bot_message" && len(message.Attachments) > 0 {
 		var attachmentTexts []string
@@ -139,6 +147,12 @@ func (mp *MessageProcessor) saveMessage(ctx context.Context, channelID string, m
 }
 
 func (mp *MessageProcessor) saveReply(ctx context.Context, channelID, threadTS string, reply slack.Message) error {
+	if reply.User != "" {
+		if err := mp.ensureUserInfo(ctx, reply.User); err != nil {
+			log.Printf("Failed to fetch user info for %s: %v", reply.User, err)
+		}
+	}
+
 	text := reply.Text
 	if reply.SubType == "bot_message" && len(reply.Attachments) > 0 {
 		var attachmentTexts []string
@@ -159,4 +173,37 @@ func (mp *MessageProcessor) saveReply(ctx context.Context, channelID, threadTS s
 		reply.User,
 		text,
 	)
+}
+
+func (mp *MessageProcessor) ensureUserInfo(ctx context.Context, userID string) error {
+	if mp.userCache[userID] {
+		return nil
+	}
+
+	user, err := mp.slackClient.GetUserInfo(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	var email, profileImage string
+	if user.Profile.Email != "" {
+		email = user.Profile.Email
+	}
+	if user.Profile.Image512 != "" {
+		profileImage = user.Profile.Image512
+	}
+
+	if err := mp.db.SaveUser(
+		user.ID,
+		user.Name,
+		user.RealName,
+		user.Profile.DisplayName,
+		email,
+		profileImage,
+	); err != nil {
+		return err
+	}
+
+	mp.userCache[userID] = true
+	return nil
 }
