@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go vet:*)",
+      "Bash(go build:*)",
+      "Bash(ls:*)",
+      "Bash(./slack-all-contexts -h)",
+      "Bash(./slack-all-contexts:*)"
+    ],
+    "deny": []
+  },
+  "enableAllProjectMcpServers": false
+}
