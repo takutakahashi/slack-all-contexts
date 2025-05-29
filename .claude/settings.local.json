@@ -6,7 +6,9 @@
       "Bash(ls:*)",
       "Bash(./slack-all-contexts -h)",
       "Bash(./slack-all-contexts:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(go mod:*)",
+      "Bash(CGO_ENABLED=0 go build .)"
     ],
     "deny": []
   },
